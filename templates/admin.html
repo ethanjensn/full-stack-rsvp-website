@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Admin - RSVPs</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}" />
+    <style>
+      .admin-wrap {
+        max-width: 980px;
+        margin: 40px auto;
+        padding: 24px;
+      }
+      .admin-title {
+        font-family: "Cormorant Garamond", serif;
+        font-size: 34px;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+        margin-bottom: 18px;
+        font-weight: 400;
+      }
+      table {
+        width: 100%;
+        border-collapse: collapse;
+      }
+      th,
+      td {
+        border: 1px solid #6a6a4b;
+        padding: 10px 12px;
+        text-align: left;
+        vertical-align: top;
+        font-size: 13px;
+      }
+      th {
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+        font-weight: 500;
+      }
+      .guest-list {
+        margin: 0;
+        padding-left: 18px;
+      }
+      .empty {
+        font-size: 13px;
+        margin-top: 8px;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="admin-wrap">
+      <h1 class="admin-title">RSVP Submissions</h1>
+
+      {% if rsvps|length == 0 %}
+      <div class="empty">No submissions yet.</div>
+      {% else %}
+      <table>
+        <thead>
+          <tr>
+            <th>Submitted</th>
+            <th>Name</th>
+            <th>Email</th>
+            <th>Attendance</th>
+            <th>Party Size</th>
+            <th>Guests</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for rsvp in rsvps %}
+          <tr>
+            <td>{{ rsvp.created_at }}</td>
+            <td>{{ rsvp.first_name }} {{ rsvp.last_name }}</td>
+            <td>{{ rsvp.email }}</td>
+            <td>{{ rsvp.attendance }}</td>
+            <td>{{ rsvp.party_size }}</td>
+            <td>
+              {% if rsvp.guests|length == 0 %}
+              —
+              {% else %}
+              <ol class="guest-list">
+                {% for g in rsvp.guests %}
+                <li>{{ g.first }} {{ g.last }}</li>
+                {% endfor %}
+              </ol>
+              {% endif %}
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+      {% endif %}
+    </div>
+    <script>
+      // Ensure animations trigger on page load and all navigation
+      function triggerAnimations() {
+        // Force reflow to restart animations
+        const animatedElements = document.querySelectorAll('.admin-title, table thead, table tbody tr');
+        animatedElements.forEach(el => {
+          el.style.animation = 'none';
+          el.offsetHeight; // Trigger reflow
+          el.style.animation = null;
+        });
+      }
+      
+      // Handle all types of page navigation
+      document.addEventListener('DOMContentLoaded', triggerAnimations);
+      
+      // Handle back/forward navigation
+      window.addEventListener('pageshow', function(event) {
+        // Always trigger animations to ensure they work with forward button
+        triggerAnimations();
+      });
+      
+      // Additional fallback for visibility changes (when tab becomes active)
+      document.addEventListener('visibilitychange', function() {
+        if (!document.hidden) {
+          // Page became visible again, ensure animations are reset
+          setTimeout(triggerAnimations, 50);
+        }
+      });
+    </script>
+  </body>
+</html>

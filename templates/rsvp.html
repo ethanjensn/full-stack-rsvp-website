@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>RSVP</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600&family=Montserrat:wght@300;400;500&display=swap" rel="stylesheet" />
+  </head>
+  <body class="rsvp-page">
+    <section class="rsvp-hero" aria-label="RSVP header image"></section>
+    <div class="rsvp-wrap">
+      <div class="rsvp-border-icons">
+        <img
+          class="rsvp-border-icon rsvp-border-icon--tl"
+          src="{{ url_for('static', filename='pngwing.com.png') }}"
+          alt="Decorative corner"
+        />
+        <img
+          class="rsvp-border-icon rsvp-border-icon--tr"
+          src="{{ url_for('static', filename='pngwing.com.png') }}"
+          alt="Decorative corner"
+        />
+        <img
+          class="rsvp-border-icon rsvp-border-icon--bl"
+          src="{{ url_for('static', filename='pngwing.com.png') }}"
+          alt="Decorative corner"
+        />
+        <img
+          class="rsvp-border-icon rsvp-border-icon--br"
+          src="{{ url_for('static', filename='pngwing.com.png') }}"
+          alt="Decorative corner"
+        />
+      </div>
+      <h1 class="rsvp-heading">RSVP</h1>
+
+      {% if error_message %}
+      <div class="rsvp-error" role="alert">{{ error_message }}</div>
+      {% endif %}
+
+      <form method="POST" action="{{ url_for('submit_rsvp') }}">
+        <div class="rsvp-section">
+          <div class="rsvp-section-title">Guest Details</div>
+          <div class="rsvp-field-row">
+            <div class="rsvp-field">
+              <label class="rsvp-label" for="firstName">
+                First Name <span class="req">*</span>
+              </label>
+              <input
+                class="rsvp-input"
+                id="firstName"
+                name="firstName"
+                required
+                maxlength="100"
+                value="{{ (form_data.first_name if form_data else '')|default('', true) }}"
+              />
+            </div>
+            <div class="rsvp-field">
+              <label class="rsvp-label" for="lastName">
+                Last Name <span class="req">*</span>
+              </label>
+              <input
+                class="rsvp-input"
+                id="lastName"
+                name="lastName"
+                required
+                maxlength="100"
+                value="{{ (form_data.last_name if form_data else '')|default('', true) }}"
+              />
+            </div>
+          </div>
+          <div class="rsvp-field-row">
+            <div class="rsvp-field">
+              <label class="rsvp-label" for="email">
+                Email <span class="req">*</span>
+              </label>
+              <input
+                class="rsvp-input"
+                id="email"
+                name="email"
+                type="email"
+                required
+                maxlength="254"
+                value="{{ (form_data.email if form_data else '')|default('', true) }}"
+              />
+            </div>
+          </div>
+        </div>
+
+        <div class="rsvp-section">
+          <div class="rsvp-section-title">Will you join the celebration?</div>
+          <div class="rsvp-radio-group">
+            <label class="rsvp-radio-label">
+              <input
+                type="radio"
+                name="attendance"
+                id="attendYes"
+                value="yes"
+                {% if not form_data or (form_data.attendance|default('yes', true) == 'yes') %}checked{% endif %}
+              />
+              Joyfully Accept
+            </label>
+            <label class="rsvp-radio-label">
+              <input
+                type="radio"
+                name="attendance"
+                id="attendNo"
+                value="no"
+                {% if form_data and form_data.attendance == 'no' %}checked{% endif %}
+              />
+              Regretfully Decline
+            </label>
+          </div>
+        </div>
+
+        <div class="rsvp-section">
+          <div class="rsvp-section-title">Party Size</div>
+          <p class="rsvp-note">
+            Please reference your save the date for the number of seats reserved in your honor.
+          </p>
+          <div class="rsvp-field-row" style="justify-content: center;">
+            <div class="rsvp-field" style="flex: 0 1 120px;">
+              <input
+                class="rsvp-input"
+                id="partySize"
+                name="partySize"
+                type="number"
+                min="1"
+                max="10"
+                value="{{ (form_data.party_size if form_data else 1)|default(1, true) }}"
+              />
+            </div>
+          </div>
+        </div>
+
+        <div class="rsvp-section" id="additionalGuestsSection" hidden>
+          <div class="rsvp-section-title">Additional Guests</div>
+          <div id="additionalGuests"></div>
+        </div>
+
+        <div class="rsvp-actions">
+          <button type="submit">Send My Response</button>
+        </div>
+      </form>
+    </div>
+
+    <script>
+      (function () {
+        const partySizeInput = document.getElementById("partySize");
+        const additionalSection = document.getElementById("additionalGuestsSection");
+        const additionalContainer = document.getElementById("additionalGuests");
+        const attendYes = document.getElementById("attendYes");
+        const attendNo = document.getElementById("attendNo");
+        const existingGuests = JSON.parse('{{ (form_data.guests if form_data and form_data.guests is defined else [])|tojson|safe }}');
+
+        function renderAdditionalGuests() {
+          const value = parseInt(partySizeInput.value, 10);
+          const total = isNaN(value) || value < 1 ? 1 : value;
+          const extraGuests = Math.max(0, total - 1);
+
+          additionalContainer.innerHTML = "";
+
+          if (extraGuests === 0) {
+            additionalSection.hidden = true;
+            return;
+          }
+
+          additionalSection.hidden = false;
+
+          for (let i = 0; i < extraGuests; i++) {
+            const idx = i + 2; 
+            const row = document.createElement("div");
+            row.className = "rsvp-field-row";
+
+            const firstField = document.createElement("div");
+            firstField.className = "rsvp-field";
+            const firstLabel = document.createElement("label");
+            firstLabel.className = "rsvp-label";
+            firstLabel.htmlFor = `guest${idx}First`;
+            firstLabel.innerHTML = `GUEST ${idx} FIRST NAME <span class="req">*</span>`;
+            const firstInput = document.createElement("input");
+            firstInput.className = "rsvp-input";
+            firstInput.id = `guest${idx}First`;
+            firstInput.name = `guest${idx}First`;
+            firstInput.maxLength = 100;
+            if (existingGuests[i] && existingGuests[i].first) {
+              firstInput.value = existingGuests[i].first;
+            }
+
+            const lastField = document.createElement("div");
+            lastField.className = "rsvp-field";
+            const lastLabel = document.createElement("label");
+            lastLabel.className = "rsvp-label";
+            lastLabel.htmlFor = `guest${idx}Last`;
+            lastLabel.innerHTML = `GUEST ${idx} LAST NAME <span class="req">*</span>`;
+            const lastInput = document.createElement("input");
+            lastInput.className = "rsvp-input";
+            lastInput.id = `guest${idx}Last`;
+            lastInput.name = `guest${idx}Last`;
+            lastInput.maxLength = 100;
+            if (existingGuests[i] && existingGuests[i].last) {
+              lastInput.value = existingGuests[i].last;
+            }
+
+            firstField.appendChild(firstLabel);
+            firstField.appendChild(firstInput);
+            lastField.appendChild(lastLabel);
+            lastField.appendChild(lastInput);
+
+            row.appendChild(firstField);
+            row.appendChild(lastField);
+            additionalContainer.appendChild(row);
+          }
+        }
+
+        function handleAttendanceChange() {
+          if (attendNo.checked) {
+            partySizeInput.value = 1;
+            partySizeInput.disabled = true;
+          } else {
+            partySizeInput.disabled = false;
+          }
+          renderAdditionalGuests();
+        }
+
+        partySizeInput.addEventListener("input", renderAdditionalGuests);
+        partySizeInput.addEventListener("change", renderAdditionalGuests);
+        attendYes.addEventListener("change", handleAttendanceChange);
+        attendNo.addEventListener("change", handleAttendanceChange);
+
+        handleAttendanceChange();
+      })();
+      
+      // Ensure animations trigger on page load and all navigation
+      function triggerAnimations() {
+        // Force reflow to restart animations
+        const animatedElements = document.querySelectorAll('.rsvp-hero, .rsvp-wrap, .rsvp-section, .rsvp-actions');
+        animatedElements.forEach(el => {
+          el.style.animation = 'none';
+          el.offsetHeight; // Trigger reflow
+          el.style.animation = null;
+        });
+      }
+      
+      // Handle all types of page navigation
+      document.addEventListener('DOMContentLoaded', triggerAnimations);
+      
+      // Handle back/forward navigation
+      window.addEventListener('pageshow', function(event) {
+        // Always trigger animations to ensure they work with forward button
+        triggerAnimations();
+      });
+      
+      // Additional fallback for visibility changes (when tab becomes active)
+      document.addEventListener('visibilitychange', function() {
+        if (!document.hidden) {
+          // Page became visible again, ensure animations are reset
+          setTimeout(triggerAnimations, 50);
+        }
+      });
+    </script>
+  </body>
+</html>

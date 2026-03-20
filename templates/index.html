@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Mary & Ethan</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600&family=Montserrat:wght@300;400;500&display=swap"
+      rel="stylesheet"
+    />
+  </head>
+  <body>
+    <main class="page">
+      <section class="hero" aria-label="Wedding invitation">
+        <!-- Optional invitation card image can be reintroduced here once the asset is available -->
+      </section>
+
+      <section class="details">
+        <div class="details__container">
+          <h1 class="names">SOPHIA &amp; JAMES</h1>
+
+          <div class="actions" aria-label="RSVP">
+            <a class="btn" href="{{ url_for('rsvp') }}">RSVP</a>
+          </div>
+
+          <div class="info" aria-label="Event details">
+            <div class="info__block">
+              <div class="info__label info__label--title">Date</div>
+              <div class="info__divider"></div>
+              <div class="info__label">SATURDAY, JULY 19 2026</div>
+            </div>
+            <div class="info__block">
+              <div class="info__label info__label--title">Location</div>
+              <div class="info__divider"></div>
+              <a
+                class="info__map-link"
+                href="https://www.google.com/maps/dir/?api=1&destination=78+E+Washington+St,+Chicago,+IL+60602"
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                <span class="info__label">CHICAGO VENUE</span>
+                <span class="info__value">78 E Washington St, Chicago, IL 60602</span>
+              </a>
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
+  </body>
+  <script>
+    // Ensure animations trigger on page load and all navigation
+    function triggerAnimations() {
+      // Force reflow to restart animations
+      const animatedElements = document.querySelectorAll('.hero, .names, .actions, .info__block');
+      animatedElements.forEach(el => {
+        el.style.animation = 'none';
+        el.offsetHeight; // Trigger reflow
+        el.style.animation = null;
+      });
+    }
+    
+    // Handle all types of page navigation
+    document.addEventListener('DOMContentLoaded', triggerAnimations);
+    
+    // Handle back/forward navigation
+    window.addEventListener('pageshow', function(event) {
+      // Always trigger animations to ensure they work with forward button
+      triggerAnimations();
+    });
+    
+    // Additional fallback for visibility changes (when tab becomes active)
+    document.addEventListener('visibilitychange', function() {
+      if (!document.hidden) {
+        // Page became visible again, ensure animations are reset
+        setTimeout(triggerAnimations, 50);
+      }
+    });
+  </script>
+</html>

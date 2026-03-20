@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>RSVP Received</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600&family=Montserrat:wght@300;400;500&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      .confirm-hero {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background-color: #421C21;
+        background-image: linear-gradient(
+            rgba(0, 0, 0, 0.18),
+            rgba(0, 0, 0, 0.18)
+          ),
+          url("{{ url_for('static', filename='pngwing.com.png') }}");
+        background-size: cover;
+        background-repeat: no-repeat;
+        background-position: center;
+        z-index: -1;
+      }
+
+      .confirm-wrap {
+        position: relative;
+        z-index: 1;
+        max-width: 640px;
+        margin: auto 0;
+        padding: 36px 28px 42px;
+        background: rgba(246, 250, 255, 0.92);
+        border: 1px solid var(--navy-border, rgba(15, 43, 69, 0.3));
+        box-shadow: 0 18px 36px rgba(0, 0, 0, 0.12);
+        backdrop-filter: blur(4px);
+        position: absolute;
+        bottom: 60px;
+        left: 50%;
+        transform: translateX(-50%);
+      }
+
+      .confirm-heading {
+        font-family: "Cormorant Garamond", serif;
+        font-size: 36px;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+        text-align: center;
+        margin: 0 0 12px;
+        color: var(--navy, #0f2b45);
+      }
+
+      .confirm-message {
+        text-align: center;
+        font-family: "Montserrat", system-ui, -apple-system, Segoe UI, Roboto,
+          Arial, sans-serif;
+        font-size: 15px;
+        letter-spacing: 0.02em;
+        margin: 0 0 20px;
+        color: var(--ink-0, #1c1f1c);
+      }
+
+      .confirm-note {
+        text-align: center;
+        font-size: 13px;
+        margin: 0 0 28px;
+        color: rgba(28, 31, 28, 0.72);
+      }
+
+      .confirm-actions {
+        display: flex;
+        justify-content: center;
+        gap: 14px;
+        flex-wrap: wrap;
+      }
+
+      .confirm-border-icons {
+        position: absolute;
+        inset: 0;
+        pointer-events: none;
+      }
+
+      .confirm-border-icon {
+        position: absolute;
+        width: 46px;
+        height: auto;
+      }
+
+      .confirm-border-icon--tl {
+        top: 12px;
+        left: 12px;
+      }
+
+      .confirm-border-icon--tr {
+        top: 12px;
+        right: 12px;
+        transform: rotate(90deg);
+      }
+
+      .confirm-border-icon--bl {
+        bottom: 12px;
+        left: 12px;
+        transform: rotate(270deg);
+      }
+
+      .confirm-border-icon--br {
+        bottom: 12px;
+        right: 12px;
+        transform: rotate(180deg);
+      }
+
+      @media (max-width: 720px) {
+        .confirm-wrap {
+          margin: 0 16px;
+          padding: 28px 22px 34px;
+          bottom: 40px;
+        }
+
+        .confirm-heading {
+          font-size: 30px;
+        }
+      }
+    </style>
+  </head>
+  <body class="rsvp-page">
+    <section class="confirm-hero" aria-label="RSVP confirmation image"></section>
+    <main class="confirm-wrap">
+      <div class="confirm-border-icons">
+        <img
+          class="confirm-border-icon confirm-border-icon--tl"
+          src="{{ url_for('static', filename='pngwing.com.png') }}"
+          alt="Decorative corner"
+        />
+        <img
+          class="confirm-border-icon confirm-border-icon--tr"
+          src="{{ url_for('static', filename='pngwing.com.png') }}"
+          alt="Decorative corner"
+        />
+        <img
+          class="confirm-border-icon confirm-border-icon--bl"
+          src="{{ url_for('static', filename='pngwing.com.png') }}"
+          alt="Decorative corner"
+        />
+        <img
+          class="confirm-border-icon confirm-border-icon--br"
+          src="{{ url_for('static', filename='pngwing.com.png') }}"
+          alt="Decorative corner"
+        />
+      </div>
+
+      <h1 class="confirm-heading">RSVP Received</h1>
+      <p class="confirm-message">
+        Thank you{% if first_name or last_name %}, {{ first_name }} {{ last_name }}{% endif %}! We have
+        recorded your response.
+      </p>
+      <p class="confirm-note">
+        If you need to make any updates, feel free to submit the form again or contact us.
+      </p>
+
+      <div class="confirm-actions">
+        <a class="btn" href="{{ url_for('index') }}">Back to Home</a>
+        <a class="btn" href="{{ url_for('rsvp') }}">Submit Another RSVP</a>
+      </div>
+    </main>
+  </body>
+</html>
