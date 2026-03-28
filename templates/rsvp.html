@@ -86,6 +86,20 @@
                 value="{{ (form_data.email if form_data else '')|default('', true) }}"
               />
             </div>
+            <div class="rsvp-field">
+              <label class="rsvp-label" for="phone">
+                Phone Number <span class="req">*</span>
+              </label>
+              <input
+                class="rsvp-input"
+                id="phone"
+                name="phone"
+                type="tel"
+                required
+                maxlength="20"
+                value="{{ (form_data.phone if form_data else '')|default('', true) }}"
+              />
+            </div>
           </div>
         </div>
 
@@ -131,6 +145,25 @@
                 max="10"
                 value="{{ (form_data.party_size if form_data else 1)|default(1, true) }}"
               />
+            </div>
+          </div>
+        </div>
+
+        <div class="rsvp-section">
+          <div class="rsvp-section-title">Song Request (Optional)</div>
+          <p class="rsvp-note">
+            Is there a song you'd love to hear on the dance floor?
+          </p>
+          <div class="rsvp-field-row">
+            <div class="rsvp-field">
+              <textarea
+                class="rsvp-input"
+                id="songRequest"
+                name="songRequest"
+                maxlength="500"
+                rows="3"
+                placeholder="Enter song title and artist..."
+              >{{ (form_data.song_request if form_data else '')|default('', true) }}</textarea>
             </div>
           </div>
         </div>

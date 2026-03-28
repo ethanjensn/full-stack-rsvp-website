@@ -59,9 +59,11 @@
             <th>Submitted</th>
             <th>Name</th>
             <th>Email</th>
+            <th>Phone</th>
             <th>Attendance</th>
             <th>Party Size</th>
             <th>Guests</th>
+            <th>Song Request</th>
           </tr>
         </thead>
         <tbody>
@@ -70,6 +72,7 @@
             <td>{{ rsvp.created_at }}</td>
             <td>{{ rsvp.first_name }} {{ rsvp.last_name }}</td>
             <td>{{ rsvp.email }}</td>
+            <td>{{ rsvp.phone }}</td>
             <td>{{ rsvp.attendance }}</td>
             <td>{{ rsvp.party_size }}</td>
             <td>
@@ -83,6 +86,7 @@
               </ol>
               {% endif %}
             </td>
+            <td>{{ rsvp.song_request or '—' }}</td>
           </tr>
           {% endfor %}
         </tbody>
