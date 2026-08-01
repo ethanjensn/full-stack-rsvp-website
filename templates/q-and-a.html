@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Q&A - Sophia & James</title>
+    <title>Q&A - {{ config.COUPLE_DISPLAY_NAME }}</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -51,7 +51,8 @@
       <div class="qa-answer">
         <p class="label">Answer</p>
         <p>
-          Our ceremony will be held in Santa Ana, CA, and the reception will follow in Huntington Beach, CA.
+          {{ config.VENUE_NAME_UPPER }}<br>
+          {{ config.VENUE_ADDRESS }}
         </p>
       </div>
     </div>
@@ -64,8 +65,7 @@
       <div class="qa-answer">
         <p class="label">Answer</p>
         <p>
-          We can’t wait to see our loved ones all dressed up for our big day!
-          Please join us in your best cocktail attire.
+          Smart casual (neat, polished attire such as collared shirts, blouses, dress pants, or nice jeans; no overly casual clothing like gym wear or flip-flops).
         </p>
       </div>
     </div>
@@ -78,8 +78,23 @@
       <div class="qa-answer">
         <p class="label">Answer</p>
         <p>
-          Your love and well wishes are the most important gifts of all.
-          If you would like to contribute further, a registry link can be found on our website.
+          Your love and well wishes are the most important gifts of all. If you would like to contribute further, a registry link can be found here: <a href="{{ config.REGISTRY_URL }}" target="_blank">{{ config.REGISTRY_URL }}</a>
+        </p>
+      </div>
+    </div>
+
+    <div class="qa-row">
+      <div class="qa-question">
+        <p class="label">Question</p>
+        <h2>WHAT ARE YOU SERVING FOR DINNER?</h2>
+      </div>
+      <div class="qa-answer">
+        <p class="label">Answer</p>
+        <p>
+          Entrées: Garlic Herb Chicken Breast, Beef Lasagna<br>
+          Side dishes: Party Potatoes, Caesar Salad, and Green Beans<br>
+          Dessert: White Cake with Cream Cheese Frosting<br>
+          Beverage choices: Water, Tea, Lemonade, Coke and Pepsi products, Beer and Wine
         </p>
       </div>
     </div>

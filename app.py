@@ -1,16 +1,34 @@
-from flask import Flask, render_template, request
+from flask import Flask, render_template, request, Response, redirect
 import json
 import os
 import re
+import uuid
 from datetime import datetime, timezone
+from typing import List, Literal
 
 import psycopg2
 import psycopg2.extras
+import resend
+from pydantic import BaseModel, Field, ValidationError, field_validator
+
+import config
 
 app = Flask(__name__)
 
+
+@app.context_processor
+def inject_config():
+    return {"config": config}
+
+
 EMAIL_REGEX = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
+PHONE_REGEX = re.compile(r"^[\d\s\-\(\)\+]+$")
 ADMIN_PATH = os.environ.get("ADMIN_PATH", "admin-a7c3f9d2b81").strip("/") or "admin-a7c3f9d2b81"
+
+# Configure Resend API
+resend.api_key = os.environ.get("RESEND_API_KEY")
+RESEND_FROM_EMAIL = os.environ.get("RESEND_FROM_EMAIL", "onboarding@resend.dev")
+NOTIFY_EMAILS = os.environ.get("NOTIFY_EMAILS", "").split(",") if os.environ.get("NOTIFY_EMAILS") else []
 
 def get_db_connection():
     database_url = os.environ.get("DATABASE_URL")
@@ -20,59 +38,89 @@ def get_db_connection():
     conn = psycopg2.connect(database_url)
     return conn
 
-def _validate_required_text(value: str, label: str, max_length: int = 100):
-    cleaned = (value or "").strip()
-    if not cleaned:
-        return None, f"{label} is required."
-    if len(cleaned) > max_length:
-        return None, f"{label} must be {max_length} characters or fewer."
-    return cleaned, None
+class Guest(BaseModel):
+    first: str = Field(default="")
+    last: str = Field(default="")
 
-def _validate_email(value: str):
-    cleaned = (value or "").strip()
-    if not cleaned:
-        return None, "Email is required."
-    if len(cleaned) > 254:
-        return None, "Email must be 254 characters or fewer."
-    if not EMAIL_REGEX.match(cleaned):
-        return None, "Please provide a valid email address."
-    return cleaned, None
+    @field_validator("first", "last", mode="before")
+    @classmethod
+    def strip_name(cls, v):
+        return (v or "").strip()
 
-def _validate_party_size(value: str):
-    try:
-        parsed = int(value)
-    except (TypeError, ValueError):
-        return 1, None
 
-    if parsed < 1:
-        return 1, "Party size must be at least 1."
-    if parsed > 10:
-        return 10, "Party size cannot exceed 10."
-    return parsed, None
+class RSVPSubmission(BaseModel):
+    first_name: str = Field(..., max_length=100)
+    last_name: str = Field(..., max_length=100)
+    email: str = Field(..., max_length=254)
+    phone: str = Field(..., max_length=20)
+    attendance: Literal["yes", "no"] = Field(default="yes")
+    party_size: int = Field(default=1, ge=1, le=10)
+    song_request: str = Field(default="", max_length=500)
+    guests: List[Guest] = Field(default_factory=list)
 
-def _validate_attendance(value: str):
-    cleaned = (value or "yes").strip().lower()
-    if cleaned not in {"yes", "no"}:
-        return "yes", "Attendance selection is invalid."
-    return cleaned, None
+    @field_validator("first_name", "last_name", mode="before")
+    @classmethod
+    def validate_required_name(cls, v, info):
+        label = "First name" if info.field_name == "first_name" else "Last name"
+        cleaned = (v or "").strip()
+        if not cleaned:
+            raise ValueError(f"{label} is required.")
+        if len(cleaned) > 100:
+            raise ValueError(f"{label} must be 100 characters or fewer.")
+        return cleaned
 
-def _validate_phone(value: str):
-    cleaned = (value or "").strip()
-    if not cleaned:
-        return None, "Phone number is required."
-    if len(cleaned) > 20:
-        return None, "Phone number must be 20 characters or fewer."
-    # Basic phone validation - allows digits, spaces, dashes, parentheses, plus
-    phone_regex = re.compile(r"^[\d\s\-\(\)\+]+$")
-    if not phone_regex.match(cleaned):
-        return None, "Please provide a valid phone number."
-    return cleaned, None
+    @field_validator("email", mode="before")
+    @classmethod
+    def validate_email(cls, v):
+        cleaned = (v or "").strip()
+        if not cleaned:
+            raise ValueError("Email is required.")
+        if len(cleaned) > 254:
+            raise ValueError("Email must be 254 characters or fewer.")
+        if not EMAIL_REGEX.match(cleaned):
+            raise ValueError("Please provide a valid email address.")
+        return cleaned
 
-def _validate_song_request(value: str):
-    cleaned = (value or "").strip()
-    if len(cleaned) > 500:
-        return None, "Song request must be 500 characters or fewer."
-    return cleaned, None
+    @field_validator("phone", mode="before")
+    @classmethod
+    def validate_phone(cls, v):
+        cleaned = (v or "").strip()
+        if not cleaned:
+            raise ValueError("Phone number is required.")
+        if len(cleaned) > 20:
+            raise ValueError("Phone number must be 20 characters or fewer.")
+        if not PHONE_REGEX.match(cleaned):
+            raise ValueError("Please provide a valid phone number.")
+        return cleaned
+
+    @field_validator("attendance", mode="before")
+    @classmethod
+    def validate_attendance(cls, v):
+        value = (v or "yes").strip().lower()
+        if value not in {"yes", "no"}:
+            raise ValueError("Attendance selection is invalid.")
+        return value
+
+    @field_validator("party_size", mode="before")
+    @classmethod
+    def validate_party_size(cls, v):
+        try:
+            parsed = int(v)
+        except (TypeError, ValueError):
+            return 1
+        if parsed < 1:
+            raise ValueError("Party size must be at least 1.")
+        if parsed > 10:
+            raise ValueError("Party size cannot exceed 10.")
+        return parsed
+
+    @field_validator("song_request", mode="before")
+    @classmethod
+    def validate_song_request(cls, v):
+        cleaned = (v or "").strip()
+        if len(cleaned) > 500:
+            raise ValueError("Song request must be 500 characters or fewer.")
+        return cleaned
 
 def init_db():
     with get_db_connection() as conn:
@@ -102,76 +150,114 @@ def index():
     """Serve the blank landing page for verifying Flask."""
     return render_template("index.html")
 
+@app.route("/calendar")
+def calendar():
+    """Redirect to Google Calendar for adding the wedding event."""
+    from urllib.parse import quote
+    title = quote(config.CALENDAR_TITLE)
+    details = quote(config.CALENDAR_DESCRIPTION)
+    location = quote(config.CALENDAR_LOCATION)
+    start = config.CALENDAR_START_UTC
+    end = config.CALENDAR_END_UTC
+    url = f"https://calendar.google.com/calendar/render?action=TEMPLATE&text={title}&dates={start}/{end}&details={details}&location={location}"
+    return redirect(url)
+
+
+@app.route("/calendar.ics")
+def calendar_ics():
+    """Serve an iCalendar file for Apple Calendar and other .ics-capable apps."""
+    start = config.CALENDAR_START_UTC
+    end = config.CALENDAR_END_UTC
+    summary = config.CALENDAR_TITLE
+    description = config.CALENDAR_DESCRIPTION
+    location = config.CALENDAR_LOCATION
+    uid = config.CALENDAR_ICS_UID
+    dtstamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
+
+    lines = [
+        "BEGIN:VCALENDAR",
+        "VERSION:2.0",
+        f"PRODID:{config.CALENDAR_ICS_PRODID}",
+        "CALSCALE:GREGORIAN",
+        "METHOD:PUBLISH",
+        "BEGIN:VEVENT",
+        f"UID:{uid}",
+        f"DTSTAMP:{dtstamp}",
+        f"DTSTART:{start}",
+        f"DTEND:{end}",
+        f"SUMMARY:{summary}",
+        f"DESCRIPTION:{description}",
+        f"LOCATION:{location}",
+        "END:VEVENT",
+        "END:VCALENDAR",
+    ]
+    # Fold lines longer than 75 octets per RFC 5545.
+    folded = []
+    for line in lines:
+        encoded = line.encode("utf-8")
+        if len(encoded) <= 75:
+            folded.append(line)
+        else:
+            chunks = []
+            current = line
+            while current:
+                encoded_current = current.encode("utf-8")
+                if len(encoded_current) <= 74:
+                    chunks.append(current)
+                    break
+                # Find a safe split point within the first 74 bytes.
+                limit = 74
+                while limit > 0 and len(current[:limit].encode("utf-8")) > 74:
+                    limit -= 1
+                chunks.append(current[:limit])
+                current = current[limit:]
+            folded.append(chunks[0])
+            for chunk in chunks[1:]:
+                folded.append(" " + chunk)
+
+    body = "\r\n".join(folded) + "\r\n"
+    return Response(
+        body,
+        mimetype="text/calendar",
+        headers={"Content-Disposition": "attachment; filename=wedding.ics"},
+    )
+
 @app.route("/rsvp")
 def rsvp():
     return render_template("rsvp.html")
 
 @app.route("/submit_rsvp", methods=["POST"])
 def submit_rsvp():
+    raw_party_size = request.form.get("partySize")
+    try:
+        guest_count = int(raw_party_size)
+    except (TypeError, ValueError):
+        guest_count = 1
+    guest_count = max(1, min(guest_count, 10))
+
+    guests = []
+    for idx in range(2, guest_count + 1):
+        guests.append({
+            "first": (request.form.get(f"guest{idx}First") or "").strip(),
+            "last": (request.form.get(f"guest{idx}Last") or "").strip(),
+        })
+
     form_data = {
         "first_name": request.form.get("firstName"),
         "last_name": request.form.get("lastName"),
         "email": request.form.get("email"),
         "phone": request.form.get("phone"),
         "attendance": request.form.get("attendance"),
-        "party_size": request.form.get("partySize"),
+        "party_size": raw_party_size,
         "song_request": request.form.get("songRequest"),
+        "guests": guests,
     }
 
-    first_name, err = _validate_required_text(form_data["first_name"], "First name")
-    if err:
-        return render_template("rsvp.html", error_message=err, form_data=form_data), 400
-
-    last_name, err = _validate_required_text(form_data["last_name"], "Last name")
-    if err:
-        return render_template("rsvp.html", error_message=err, form_data=form_data), 400
-
-    email, err = _validate_email(form_data["email"])
-    if err:
-        return render_template("rsvp.html", error_message=err, form_data=form_data), 400
-
-    phone, err = _validate_phone(form_data["phone"])
-    if err:
-        return render_template("rsvp.html", error_message=err, form_data=form_data), 400
-
-    attendance, err = _validate_attendance(form_data["attendance"])
-    if err:
-        form_data["attendance"] = attendance
-        return render_template("rsvp.html", error_message=err, form_data=form_data), 400
-
-    party_size, err = _validate_party_size(form_data["party_size"])
-    if err:
-        form_data["party_size"] = party_size
-        return render_template("rsvp.html", error_message=err, form_data=form_data), 400
-
-    song_request, err = _validate_song_request(form_data["song_request"])
-    if err:
-        return render_template("rsvp.html", error_message=err, form_data=form_data), 400
-
-    guests = []
-    guest_error = None
-    for idx in range(2, party_size + 1):
-        g_first = (request.form.get(f"guest{idx}First") or "").strip()
-        g_last = (request.form.get(f"guest{idx}Last") or "").strip()
-
-        if not (g_first or g_last):
-            guests.append({"first": "", "last": ""})
-            continue
-
-        if len(g_first) > 100:
-            guest_error = f"Guest {idx} first name must be 100 characters or fewer."
-            break
-        if len(g_last) > 100:
-            guest_error = f"Guest {idx} last name must be 100 characters or fewer."
-            break
-
-        guests.append({"first": g_first, "last": g_last})
-
-    if guest_error:
-        form_data["party_size"] = party_size
-        form_data["attendance"] = attendance
-        form_data["guests"] = guests
-        return render_template("rsvp.html", error_message=guest_error, form_data=form_data), 400
+    try:
+        submission = RSVPSubmission.model_validate(form_data)
+    except ValidationError as e:
+        error_message = e.errors()[0]["msg"]
+        return render_template("rsvp.html", error_message=error_message, form_data=form_data), 400
 
     created_at = datetime.now(timezone.utc)
 
@@ -184,22 +270,58 @@ def submit_rsvp():
                 """,
                 (
                     created_at,
-                    first_name,
-                    last_name,
-                    email,
-                    phone,
-                    attendance,
-                    party_size,
-                    json.dumps(guests),
-                    song_request,
+                    submission.first_name,
+                    submission.last_name,
+                    submission.email,
+                    submission.phone,
+                    submission.attendance,
+                    submission.party_size,
+                    json.dumps([g.model_dump() for g in submission.guests]),
+                    submission.song_request,
                 ),
             )
         conn.commit()
 
+    # Send email notification via Resend
+    try:
+        guests_list = "\n".join([f"{g['first']} {g['last']}" for g in guests if g.get("first") or g.get("last")])
+        email_body = f"""
+        New RSVP from {submission.first_name} {submission.last_name}
+
+        Email: {submission.email}
+        Phone: {submission.phone}
+        Attendance: {submission.attendance}
+        Party Size: {submission.party_size}
+
+        Additional Guests:
+        {guests_list if guests_list else "None"}
+
+        Song Request:
+        {submission.song_request if submission.song_request else "None"}
+        """
+
+        resend.Emails.send({
+            "from": RESEND_FROM_EMAIL,
+            "to": NOTIFY_EMAILS,
+            "subject": f"New RSVP: {submission.first_name} {submission.last_name}",
+            "html": f"<p>New RSVP from <strong>{submission.first_name} {submission.last_name}</strong></p>"
+                    f"<p>Email: {submission.email}<br>"
+                    f"Phone: {submission.phone}<br>"
+                    f"Attendance: {submission.attendance}<br>"
+                    f"Party Size: {submission.party_size}</p>"
+                    f"<p><strong>Additional Guests:</strong><br>"
+                    f"{guests_list if guests_list else 'None'}</p>"
+                    f"<p><strong>Song Request:</strong><br>"
+                    f"{submission.song_request if submission.song_request else 'None'}</p>"
+        })
+    except Exception as e:
+        # Log the error but don't fail the RSVP submission
+        print(f"Failed to send email notification: {e}")
+
     return render_template(
         "submit_rsvp.html",
-        first_name=first_name,
-        last_name=last_name,
+        first_name=submission.first_name,
+        last_name=submission.last_name,
     )
 
 @app.route("/qa")
@@ -239,4 +361,4 @@ def admin():
     return render_template("admin.html", rsvps=rsvps)
 
 if __name__ == "__main__":
-    app.run(debug=True)
+    app.run(debug=False, host="0.0.0.0")

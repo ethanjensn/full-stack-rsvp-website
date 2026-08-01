@@ -65,8 +65,8 @@ body {
   min-height: 52vh;
   background-color: #e0d3c7;
   background-image: linear-gradient(rgba(0, 0, 0, 0.18), rgba(0, 0, 0, 0.18)),
-    url("/static/stock-photo.jpg"),
-    url("/static/circle_flowers-4.png");
+    url("/static/assets/hero.jpg"),
+    url("/static/assets/circle_flowers-4.png");
   background-size: cover, auto 90%, cover;
   background-repeat: no-repeat;
   background-position: center, center, center;
@@ -139,33 +139,95 @@ body {
 }
 
 .info__block {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
   min-width: min(340px, 92vw);
   text-align: center;
 }
 
-.info__map-link {
+.info__map-text {
   display: flex;
   flex-direction: column;
+  justify-content: center;
+  align-items: center;
   gap: 6px;
+  flex-grow: 1;
   padding: 6px 10px;
-  text-decoration: none;
+  text-align: center;
   color: inherit;
-  border-radius: 6px;
-  transition: color 140ms ease, transform 140ms ease, background-color 140ms ease, text-decoration-color 140ms ease;
 }
 
-.info__map-link:hover {
-  background: rgba(15, 43, 69, 0.06);
-  transform: translateY(-1px);
-  text-decoration: underline;
-  text-decoration-color: rgba(15, 43, 69, 0.85);
-  text-decoration-thickness: 2px;
-  text-underline-offset: 6px;
+.info__calendar-text {
+  display: block;
+  flex-grow: 1;
+  padding: 6px 10px;
+  color: inherit;
 }
 
-.info__map-link:hover .info__label,
-.info__map-link:hover .info__value {
+.directions-button {
+  display: inline-block;
+  margin-top: 18px;
+  min-width: 190px;
+}
+
+.calendar-widget {
+  position: relative;
+  display: inline-block;
+  margin-top: 18px;
+}
+
+.calendar-widget__button {
+  display: inline-block;
+  min-width: 190px;
+}
+
+.calendar-widget__menu {
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 10;
+  display: flex;
+  flex-direction: column;
+  min-width: 190px;
+  background: #f6faff;
+  border: 1px solid var(--navy-border);
+  border-radius: 2px;
+  box-shadow: 0 8px 20px rgba(15, 43, 69, 0.12);
+  overflow: hidden;
+}
+
+.calendar-widget__menu[hidden] {
+  display: none;
+}
+
+.calendar-widget__option {
+  padding: 12px 18px;
+  font-family: "Montserrat", system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+  font-size: 11px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  text-decoration: none;
+  color: var(--navy);
+  transition: background 120ms ease, color 120ms ease;
+}
+
+.calendar-widget__option:hover {
+  background: rgba(15, 43, 69, 0.08);
   color: rgba(15, 43, 69, 0.85);
+}
+
+.calendar-widget__option:not(:last-child) {
+  border-bottom: 1px solid var(--navy-border);
+}
+
+@media (max-width: 760px) {
+  .calendar-widget__menu {
+    left: 0;
+    transform: none;
+    width: 100%;
+  }
 }
 
 .info__label {
@@ -174,6 +236,13 @@ body {
   letter-spacing: 0.26em;
   text-transform: uppercase;
   color: var(--navy);
+}
+
+.info__schedule {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 18px;
 }
 
 .info__value {
@@ -188,6 +257,10 @@ body {
 .info__label--title {
   letter-spacing: 0.2em;
   color: var(--navy);
+}
+
+.info__label--date {
+  margin-bottom: 28px;
 }
 
 .info__divider {
@@ -205,7 +278,7 @@ body {
   background-color: #db8c81;
   /* Dark overlay and floral background only */
   background-image: linear-gradient(rgba(0, 0, 0, 0.18), rgba(0, 0, 0, 0.18)),
-    url("/static/circle_flowers-4.png");
+    url("/static/assets/circle_flowers-4.png");
   background-size: cover, cover;
   background-repeat: no-repeat;
   background-position: center, center;
@@ -223,7 +296,7 @@ body {
   transform: translateX(-50%);
   width: 100%;
   max-width: 250px; 
-  background-image: url("/static/stock-photo.jpg");
+  background-image: url("/static/assets/rsvp-hero.jpg");
   background-size: cover;
   background-position: center top;
   

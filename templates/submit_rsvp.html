@@ -23,7 +23,7 @@
             rgba(0, 0, 0, 0.18),
             rgba(0, 0, 0, 0.18)
           ),
-          url("{{ url_for('static', filename='pngwing.com.png') }}");
+          url("{{ url_for('static', filename='assets/' ~ config.CONFIRM_IMAGE) }}");
         background-size: cover;
         background-repeat: no-repeat;
         background-position: center;
@@ -134,22 +134,22 @@
       <div class="confirm-border-icons">
         <img
           class="confirm-border-icon confirm-border-icon--tl"
-          src="{{ url_for('static', filename='pngwing.com.png') }}"
+          src="{{ url_for('static', filename='assets/pngwing.com.png') }}"
           alt="Decorative corner"
         />
         <img
           class="confirm-border-icon confirm-border-icon--tr"
-          src="{{ url_for('static', filename='pngwing.com.png') }}"
+          src="{{ url_for('static', filename='assets/pngwing.com.png') }}"
           alt="Decorative corner"
         />
         <img
           class="confirm-border-icon confirm-border-icon--bl"
-          src="{{ url_for('static', filename='pngwing.com.png') }}"
+          src="{{ url_for('static', filename='assets/pngwing.com.png') }}"
           alt="Decorative corner"
         />
         <img
           class="confirm-border-icon confirm-border-icon--br"
-          src="{{ url_for('static', filename='pngwing.com.png') }}"
+          src="{{ url_for('static', filename='assets/pngwing.com.png') }}"
           alt="Decorative corner"
         />
       </div>

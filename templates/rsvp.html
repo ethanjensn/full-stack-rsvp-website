@@ -15,22 +15,22 @@
       <div class="rsvp-border-icons">
         <img
           class="rsvp-border-icon rsvp-border-icon--tl"
-          src="{{ url_for('static', filename='pngwing.com.png') }}"
+          src="{{ url_for('static', filename='assets/pngwing.com.png') }}"
           alt="Decorative corner"
         />
         <img
           class="rsvp-border-icon rsvp-border-icon--tr"
-          src="{{ url_for('static', filename='pngwing.com.png') }}"
+          src="{{ url_for('static', filename='assets/pngwing.com.png') }}"
           alt="Decorative corner"
         />
         <img
           class="rsvp-border-icon rsvp-border-icon--bl"
-          src="{{ url_for('static', filename='pngwing.com.png') }}"
+          src="{{ url_for('static', filename='assets/pngwing.com.png') }}"
           alt="Decorative corner"
         />
         <img
           class="rsvp-border-icon rsvp-border-icon--br"
-          src="{{ url_for('static', filename='pngwing.com.png') }}"
+          src="{{ url_for('static', filename='assets/pngwing.com.png') }}"
           alt="Decorative corner"
         />
       </div>
@@ -281,18 +281,7 @@
       document.addEventListener('DOMContentLoaded', triggerAnimations);
       
       // Handle back/forward navigation
-      window.addEventListener('pageshow', function(event) {
-        // Always trigger animations to ensure they work with forward button
-        triggerAnimations();
-      });
-      
-      // Additional fallback for visibility changes (when tab becomes active)
-      document.addEventListener('visibilitychange', function() {
-        if (!document.hidden) {
-          // Page became visible again, ensure animations are reset
-          setTimeout(triggerAnimations, 50);
-        }
-      });
+      window.addEventListener('pageshow', triggerAnimations);
     </script>
   </body>
 </html>

@@ -109,18 +109,7 @@
       document.addEventListener('DOMContentLoaded', triggerAnimations);
       
       // Handle back/forward navigation
-      window.addEventListener('pageshow', function(event) {
-        // Always trigger animations to ensure they work with forward button
-        triggerAnimations();
-      });
-      
-      // Additional fallback for visibility changes (when tab becomes active)
-      document.addEventListener('visibilitychange', function() {
-        if (!document.hidden) {
-          // Page became visible again, ensure animations are reset
-          setTimeout(triggerAnimations, 50);
-        }
-      });
+      window.addEventListener('pageshow', triggerAnimations);
     </script>
   </body>
 </html>
