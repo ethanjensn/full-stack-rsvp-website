@@ -9,11 +9,31 @@ from typing import List, Literal
 import psycopg2
 import psycopg2.extras
 import resend
+from flask_limiter import Limiter
+from flask_limiter.util import get_remote_address
+from flask_talisman import Talisman
+from flask_wtf.csrf import CSRFProtect
 from pydantic import BaseModel, Field, ValidationError, field_validator
 
 import config
 
 app = Flask(__name__)
+# Used for CSRF tokens. Set SECRET_KEY in production so tokens survive restarts.
+app.secret_key = os.environ.get("SECRET_KEY") or os.urandom(32)
+
+csrf = CSRFProtect(app)
+limiter = Limiter(get_remote_address, app=app, default_limits=[], storage_uri="memory://")
+Talisman(
+    app,
+    force_https=False,
+    content_security_policy={
+        "default-src": "'self'",
+        "script-src": ["'self'", "'unsafe-inline'"],
+        "style-src": ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
+        "font-src": ["'self'", "https://fonts.gstatic.com"],
+        "img-src": ["'self'", "data:"],
+    },
+)
 
 
 @app.context_processor
@@ -227,6 +247,7 @@ def rsvp():
     return render_template("rsvp.html")
 
 @app.route("/submit_rsvp", methods=["POST"])
+@limiter.limit("10 per minute")
 def submit_rsvp():
     raw_party_size = request.form.get("partySize")
     try:
