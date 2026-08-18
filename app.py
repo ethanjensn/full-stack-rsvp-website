@@ -1,39 +1,23 @@
-from flask import Flask, render_template, request, Response, redirect
+from flask import Flask, render_template, request, Response, redirect, session, url_for
 import json
 import os
 import re
 import uuid
 from datetime import datetime, timezone
+from functools import wraps
+from pathlib import Path
 from typing import List, Literal
 
 import psycopg2
 import psycopg2.extras
 import resend
-from flask_limiter import Limiter
-from flask_limiter.util import get_remote_address
-from flask_talisman import Talisman
-from flask_wtf.csrf import CSRFProtect
 from pydantic import BaseModel, Field, ValidationError, field_validator
+from werkzeug.security import check_password_hash, generate_password_hash
 
 import config
 
 app = Flask(__name__)
-# Used for CSRF tokens. Set SECRET_KEY in production so tokens survive restarts.
-app.secret_key = os.environ.get("SECRET_KEY") or os.urandom(32)
-
-csrf = CSRFProtect(app)
-limiter = Limiter(get_remote_address, app=app, default_limits=[], storage_uri="memory://")
-Talisman(
-    app,
-    force_https=False,
-    content_security_policy={
-        "default-src": "'self'",
-        "script-src": ["'self'", "'unsafe-inline'"],
-        "style-src": ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
-        "font-src": ["'self'", "https://fonts.gstatic.com"],
-        "img-src": ["'self'", "data:"],
-    },
-)
+app.secret_key = os.environ.get("FLASK_SECRET_KEY", "dev-key-replace-in-production")
 
 
 @app.context_processor
@@ -143,6 +127,9 @@ class RSVPSubmission(BaseModel):
         return cleaned
 
 def init_db():
+    schema_path = Path(__file__).parent / "users.sql"
+    users_schema = schema_path.read_text(encoding="utf-8")
+
     with get_db_connection() as conn:
         with conn.cursor() as cur:
             cur.execute(
@@ -161,9 +148,33 @@ def init_db():
                 )
                 """
             )
+            cur.execute(users_schema)
         conn.commit()
 
+
+def seed_admin():
+    initial_username = os.environ.get("ADMIN_INITIAL_USERNAME")
+    initial_password = os.environ.get("ADMIN_INITIAL_PASSWORD")
+    if not initial_username or not initial_password:
+        return
+
+    with get_db_connection() as conn:
+        with conn.cursor() as cur:
+            cur.execute("SELECT 1 FROM users WHERE username = %s", (initial_username,))
+            if cur.fetchone() is None:
+                cur.execute(
+                    "INSERT INTO users (created_at, username, password_hash) VALUES (%s, %s, %s)",
+                    (
+                        datetime.now(timezone.utc),
+                        initial_username,
+                        generate_password_hash(initial_password),
+                    ),
+                )
+        conn.commit()
+
+
 init_db()
+seed_admin()
 
 @app.route("/")
 def index():
@@ -247,7 +258,6 @@ def rsvp():
     return render_template("rsvp.html")
 
 @app.route("/submit_rsvp", methods=["POST"])
-@limiter.limit("10 per minute")
 def submit_rsvp():
     raw_party_size = request.form.get("partySize")
     try:
@@ -340,7 +350,7 @@ def submit_rsvp():
         print(f"Failed to send email notification: {e}")
 
     return render_template(
-        "submit_rsvp.html",
+        "submit-rsvp.html",
         first_name=submission.first_name,
         last_name=submission.last_name,
     )
@@ -349,7 +359,45 @@ def submit_rsvp():
 def qa():
     return render_template("q-and-a.html")
 
+
+def admin_required(view):
+    @wraps(view)
+    def wrapped_view(*args, **kwargs):
+        if not session.get("admin"):
+            return redirect(url_for("admin_login"))
+        return view(*args, **kwargs)
+    return wrapped_view
+
+
+@app.route(f"/{ADMIN_PATH}/login", methods=["GET", "POST"])
+def admin_login():
+    error = None
+    if request.method == "POST":
+        username = (request.form.get("username") or "").strip()
+        password = request.form.get("password") or ""
+
+        with get_db_connection() as conn:
+            with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
+                cur.execute("SELECT * FROM users WHERE username = %s", (username,))
+                user = cur.fetchone()
+
+        if user and check_password_hash(user["password_hash"], password):
+            session["admin"] = True
+            return redirect(url_for("admin"))
+
+        error = "Invalid username or password."
+
+    return render_template("admin-login.html", error=error)
+
+
+@app.route(f"/{ADMIN_PATH}/logout")
+def admin_logout():
+    session.pop("admin", None)
+    return redirect(url_for("admin_login"))
+
+
 @app.route(f"/{ADMIN_PATH}")
+@admin_required
 def admin():
     with get_db_connection() as conn:
         with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:

@@ -41,7 +41,6 @@
       {% endif %}
 
       <form method="POST" action="{{ url_for('submit_rsvp') }}">
-        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
         <div class="rsvp-section">
           <div class="rsvp-section-title">Guest Details</div>
           <div class="rsvp-field-row">

@@ -2,4 +2,3 @@ __pycache__/
 venv/
 database.db
 sql.txt
-.coverage

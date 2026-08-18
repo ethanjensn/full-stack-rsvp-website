@@ -66,7 +66,7 @@ body {
   background-color: #e0d3c7;
   background-image: linear-gradient(rgba(0, 0, 0, 0.18), rgba(0, 0, 0, 0.18)),
     url("/static/assets/hero.jpg"),
-    url("/static/assets/circle_flowers-4.png");
+    url("/static/assets/circle-flowers-4.png");
   background-size: cover, auto 90%, cover;
   background-repeat: no-repeat;
   background-position: center, center, center;
@@ -278,7 +278,7 @@ body {
   background-color: #db8c81;
   /* Dark overlay and floral background only */
   background-image: linear-gradient(rgba(0, 0, 0, 0.18), rgba(0, 0, 0, 0.18)),
-    url("/static/assets/circle_flowers-4.png");
+    url("/static/assets/circle-flowers-4.png");
   background-size: cover, cover;
   background-repeat: no-repeat;
   background-position: center, center;

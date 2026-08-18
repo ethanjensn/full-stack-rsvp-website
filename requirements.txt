@@ -1,8 +1,6 @@
 Flask==3.0.2
-Flask-Limiter==4.1.1
-Flask-Talisman==1.1.0
-Flask-WTF==1.3.0
 gunicorn==21.2.0
 psycopg2-binary
 pydantic==2.8.2
 resend
+werkzeug>=3.0.0,<4.0.0
