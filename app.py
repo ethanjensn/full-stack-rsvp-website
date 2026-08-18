@@ -11,8 +11,10 @@ from typing import List, Literal
 import psycopg2
 import psycopg2.extras
 import resend
+from flask_wtf import FlaskForm
 from pydantic import BaseModel, Field, ValidationError, field_validator
 from werkzeug.security import check_password_hash, generate_password_hash
+from wtforms import SubmitField
 
 import config
 
@@ -125,6 +127,15 @@ class RSVPSubmission(BaseModel):
         if len(cleaned) > 500:
             raise ValueError("Song request must be 500 characters or fewer.")
         return cleaned
+
+class DeleteRSVPForm(FlaskForm):
+    # This form has no visible fields. It exists so that {{ form.hidden_tag() }}
+    # in admin.html can render the Flask-WTF CSRF token. The token is a random
+    # value signed by FLASK_SECRET_KEY and stored in the user's session cookie.
+    # On delete, validate_on_submit() checks the token from the form against
+    # the token from the session. If they do not match, the delete is rejected.
+    submit = SubmitField("Delete")
+
 
 def init_db():
     schema_path = Path(__file__).parent / "users.sql"
@@ -427,7 +438,27 @@ def admin():
             }
         )
 
-    return render_template("admin.html", rsvps=rsvps)
+    form = DeleteRSVPForm()
+
+    return render_template("admin.html", rsvps=rsvps, form=form)
+
+@app.route(f"/{ADMIN_PATH}/delete/<int:rsvp_id>", methods=["POST"])
+@admin_required
+def delete_rsvp(rsvp_id):
+    # form.validate_on_submit() is True only when:
+    #   1. The request method is POST, PUT, PATCH, or DELETE.
+    #   2. The csrf_token in the submitted form matches the csrf_token
+    #      stored in the signed session cookie.
+    # This prevents an attacker from tricking a logged-in admin into
+    # deleting an RSVP through a link on another site.
+    form = DeleteRSVPForm()
+    if form.validate_on_submit():
+        with get_db_connection() as conn:
+            with conn.cursor() as cur:
+                cur.execute("DELETE FROM rsvps WHERE id = %s", (rsvp_id,))
+            conn.commit()
+    return redirect(url_for("admin"))
+
 
 if __name__ == "__main__":
     app.run(debug=False, host="0.0.0.0")
