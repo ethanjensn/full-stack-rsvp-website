@@ -68,7 +68,7 @@
         </thead>
         <tbody>
           {% for rsvp in rsvps %}
-          <tr>
+          <tr data-row-index="{{ loop.index0 }}">
             <td>{{ rsvp.created_at }}</td>
             <td>{{ rsvp.first_name }} {{ rsvp.last_name }}</td>
             <td>{{ rsvp.email }}</td>
@@ -94,20 +94,38 @@
       {% endif %}
     </div>
     <script>
+      // Animate table rows as they enter the viewport, with a top-down stagger
+      function staggerTableRows() {
+        const rows = document.querySelectorAll('table tbody tr[data-row-index]');
+        const observer = new IntersectionObserver((entries) => {
+          const visible = entries
+            .filter(entry => entry.isIntersecting)
+            .map(entry => entry.target)
+            .sort((a, b) => Number(a.dataset.rowIndex) - Number(b.dataset.rowIndex));
+          visible.forEach((row, index) => {
+            setTimeout(() => row.classList.add('is-visible'), index * 100);
+          });
+        }, { threshold: 0 });
+
+        rows.forEach(row => observer.observe(row));
+      }
+
       // Ensure animations trigger on page load and all navigation
       function triggerAnimations() {
-        // Force reflow to restart animations
-        const animatedElements = document.querySelectorAll('.admin-title, table thead, table tbody tr');
+        const animatedElements = document.querySelectorAll('.admin-title, table thead');
         animatedElements.forEach(el => {
           el.style.animation = 'none';
           el.offsetHeight; // Trigger reflow
           el.style.animation = null;
         });
       }
-      
+
       // Handle all types of page navigation
-      document.addEventListener('DOMContentLoaded', triggerAnimations);
-      
+      document.addEventListener('DOMContentLoaded', () => {
+        staggerTableRows();
+        triggerAnimations();
+      });
+
       // Handle back/forward navigation
       window.addEventListener('pageshow', triggerAnimations);
     </script>
