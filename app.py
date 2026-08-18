@@ -438,9 +438,15 @@ def admin():
             }
         )
 
+    total_rsvps = len(rsvps)
+    total_yes = sum(1 for rsvp in rsvps if rsvp["attendance"] == "yes")
+    total_no = sum(1 for rsvp in rsvps if rsvp["attendance"] == "no")
+    total_guests = sum(rsvp["party_size"] for rsvp in rsvps if rsvp["attendance"] == "yes")
+    total_no_guests = sum(rsvp["party_size"] for rsvp in rsvps if rsvp["attendance"] == "no")
+
     form = DeleteRSVPForm()
 
-    return render_template("admin.html", rsvps=rsvps, form=form)
+    return render_template("admin.html", rsvps=rsvps, form=form, total_rsvps=total_rsvps, total_yes=total_yes, total_no=total_no, total_guests=total_guests, total_no_guests=total_no_guests)
 
 @app.route(f"/{ADMIN_PATH}/delete/<int:rsvp_id>", methods=["POST"])
 @admin_required
