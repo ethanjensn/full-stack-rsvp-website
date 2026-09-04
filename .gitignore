@@ -2,3 +2,7 @@ __pycache__/
 venv/
 database.db
 sql.txt
+node_modules/
+.dev.vars
+.wrangler/
+dist/

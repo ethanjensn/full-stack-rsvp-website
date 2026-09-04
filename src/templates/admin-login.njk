@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Admin Login</title>
+    <link rel="stylesheet" href="/static/style.css" />
+    <style>
+      .login-wrap {
+        max-width: 420px;
+        margin: 80px auto;
+        padding: 32px;
+        border: 1px solid #6a6a4b;
+      }
+      .login-title {
+        font-family: "Cormorant Garamond", serif;
+        font-size: 28px;
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+        margin-bottom: 24px;
+        text-align: center;
+      }
+      .login-field {
+        margin-bottom: 16px;
+      }
+      .login-label {
+        display: block;
+        font-size: 12px;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+        margin-bottom: 6px;
+      }
+      .login-input {
+        width: 100%;
+        padding: 10px;
+        border: 1px solid #6a6a4b;
+        background: transparent;
+        font-family: "Montserrat", sans-serif;
+        font-size: 14px;
+      }
+      .login-error {
+        color: #9e2a2a;
+        margin-bottom: 16px;
+        text-align: center;
+        font-size: 13px;
+      }
+      .login-actions {
+        text-align: center;
+        margin-top: 24px;
+      }
+      .login-actions button {
+        padding: 10px 24px;
+        border: 1px solid #6a6a4b;
+        background: transparent;
+        font-family: "Montserrat", sans-serif;
+        font-size: 12px;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+        cursor: pointer;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="login-wrap">
+      <h1 class="login-title">Admin Login</h1>
+
+      {% if error %}
+      <div class="login-error" role="alert">{{ error }}</div>
+      {% endif %}
+
+      <form method="POST" action="/{{ admin_path }}/login">
+        <div class="login-field">
+          <label class="login-label" for="username">Username</label>
+          <input class="login-input" id="username" name="username" required />
+        </div>
+        <div class="login-field">
+          <label class="login-label" for="password">Password</label>
+          <input class="login-input" id="password" name="password" type="password" required />
+        </div>
+        <div class="login-actions">
+          <button type="submit">Log In</button>
+        </div>
+      </form>
+    </div>
+  </body>
+</html>

@@ -1,0 +1,11 @@
+name = "full-stack-rsvp-website"
+main = "src/index.js"
+compatibility_date = "2025-01-01"
+compatibility_flags = ["nodejs_compat"]
+
+[assets]
+directory = "./static"
+binding = "ASSETS"
+
+[vars]
+ADMIN_PATH = "admin-a7c3f9d2b81"

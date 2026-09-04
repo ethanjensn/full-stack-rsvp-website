@@ -34,3 +34,64 @@ After the first run, the user is stored in the database and the initial environm
 ## Database schema
 
 The `rsvps` table is created by `init_db()` in `app.py`. The `users` table is defined in `users.sql` and executed on app startup. Do not edit `sql.txt`; it is only for local environment variables.
+
+## Cloudflare Workers deployment
+
+This branch also contains a Cloudflare Workers rewrite of the Flask app (`src/index.js`) that uses:
+
+- **Nunjucks** for templates (Jinja2-compatible syntax)
+- **Neon serverless driver** for PostgreSQL
+- **HMAC-signed session cookies** for admin auth
+- **Werkzeug hash verification** so existing `users.password_hash` values from the Flask app keep working
+- **Resend REST API** for email notifications
+- **Cloudflare assets binding** for `static/` files
+
+### Setup
+
+1. Install Node dependencies:
+
+   ```powershell
+   npm install
+   ```
+
+2. Bundle Nunjucks templates into `src/templates-bundle.js`:
+
+   ```powershell
+   npm run bundle-templates
+   ```
+
+3. Create a `.dev.vars` file in the repo root for local testing (this file is gitignored):
+
+   ```
+   DATABASE_URL=postgresql://...
+   SESSION_SECRET=a-long-random-string
+   RESEND_API_KEY=...
+   RESEND_FROM_EMAIL=...
+   NOTIFY_EMAILS=...
+   ```
+
+4. Run locally:
+
+   ```powershell
+   npx wrangler dev
+   ```
+
+### Deploy
+
+1. Set the secrets in your Cloudflare account:
+
+   ```powershell
+   npx wrangler secret put DATABASE_URL
+   npx wrangler secret put SESSION_SECRET
+   npx wrangler secret put RESEND_API_KEY
+   npx wrangler secret put RESEND_FROM_EMAIL
+   npx wrangler secret put NOTIFY_EMAILS
+   ```
+
+2. Deploy:
+
+   ```powershell
+   npx wrangler deploy
+   ```
+
+The Worker reads `ADMIN_PATH` from `wrangler.toml` vars and uses the existing Neon `users` table for admin login, so no credential migration is needed.
