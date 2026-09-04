@@ -37,9 +37,10 @@ The `rsvps` table is created by `init_db()` in `app.py`. The `users` table is de
 
 ## Cloudflare Workers deployment
 
-This branch also contains a Cloudflare Workers rewrite of the Flask app (`src/index.js`) that uses:
+This branch contains a Cloudflare Workers rewrite of the Flask app (`backend/index.js`) with a React frontend:
 
-- **Nunjucks** for templates (Jinja2-compatible syntax)
+- **React + Vite** for the single-page frontend (`frontend/`)
+- **JSON API** served by the Worker for config, RSVP submission, and admin operations
 - **Neon serverless driver** for PostgreSQL
 - **HMAC-signed session cookies** for admin auth
 - **Werkzeug hash verification** so existing `users.password_hash` values from the Flask app keep working
@@ -48,19 +49,16 @@ This branch also contains a Cloudflare Workers rewrite of the Flask app (`src/in
 
 ### Setup
 
-1. Install Node dependencies:
+1. Install Node dependencies in the root and the frontend:
 
    ```powershell
    npm install
+   cd frontend
+   npm install
+   cd ..
    ```
 
-2. Bundle Nunjucks templates into `src/templates-bundle.js`:
-
-   ```powershell
-   npm run bundle-templates
-   ```
-
-3. Create a `.dev.vars` file in the repo root for local testing (this file is gitignored):
+2. Create a `.dev.vars` file in the repo root for local testing (this file is gitignored):
 
    ```
    DATABASE_URL=postgresql://...
@@ -70,10 +68,20 @@ This branch also contains a Cloudflare Workers rewrite of the Flask app (`src/in
    NOTIFY_EMAILS=...
    ```
 
-4. Run locally:
+3. Run locally (builds the frontend and starts the Worker):
 
    ```powershell
    npx wrangler dev
+   ```
+
+   Or run the frontend dev server separately with the Worker as an API proxy:
+
+   ```powershell
+   # Terminal 1
+   npm run dev:backend
+
+   # Terminal 2
+   npm run dev:frontend
    ```
 
 ### Deploy
@@ -91,7 +99,7 @@ This branch also contains a Cloudflare Workers rewrite of the Flask app (`src/in
 2. Deploy:
 
    ```powershell
-   npx wrangler deploy
+   npm run deploy
    ```
 
 The Worker reads `ADMIN_PATH` from `wrangler.toml` vars and uses the existing Neon `users` table for admin login, so no credential migration is needed.
