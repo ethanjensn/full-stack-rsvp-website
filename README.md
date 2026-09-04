@@ -49,13 +49,10 @@ This branch contains a Cloudflare Workers rewrite of the Flask app (`backend/ind
 
 ### Setup
 
-1. Install Node dependencies in the root and the frontend:
+1. Install Node dependencies (uses npm workspaces):
 
    ```powershell
    npm install
-   cd frontend
-   npm install
-   cd ..
    ```
 
 2. Create a `.dev.vars` file in the repo root for local testing (this file is gitignored):
