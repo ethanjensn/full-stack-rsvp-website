@@ -1,0 +1,21 @@
+{
+  "name": "full-stack-rsvp-worker",
+  "version": "1.0.0",
+  "private": true,
+  "workspaces": [
+    "frontend"
+  ],
+  "scripts": {
+    "dev": "npm run build && wrangler dev",
+    "dev:frontend": "npm run dev -w frontend",
+    "dev:backend": "wrangler dev",
+    "build": "npm run build -w frontend",
+    "deploy": "npm run build && wrangler deploy"
+  },
+  "dependencies": {
+    "@neondatabase/serverless": "^0.9.0"
+  },
+  "devDependencies": {
+    "wrangler": "^3.0.0"
+  }
+}

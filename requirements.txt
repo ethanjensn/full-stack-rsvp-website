@@ -1,7 +1,0 @@
-Flask==3.0.2
-flask-wtf==1.2.1
-gunicorn==21.2.0
-psycopg2-binary
-pydantic==2.8.2
-resend
-werkzeug>=3.0.0,<4.0.0
